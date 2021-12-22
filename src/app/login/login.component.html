@@ -1,3 +1,8 @@
+<form [formGroup]="loginForm">
+  <label for="name">name:</label>
+  <input type="text" class="form-control" formControlName="name" id="name">
+  <label for="password">password:</label>
+  <input type="password" class="form-control" formControlName="password" id="password">
+</form>
 
-
-<button (click)="login()">login</button>
+<button (click)="login()" id="login-btn">login</button>
