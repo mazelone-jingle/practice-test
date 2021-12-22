@@ -30,7 +30,7 @@ export class HttpService {
   }
 
   get<T>(url: string, params: any): Observable<T[]> {
-    return this.http.get<IResponse<T>>(`${this.baseUrl}`, {headers: this.headers, params: params})
+    return this.http.get<IResponse<T>>(url, {headers: this.headers, params: params})
       .pipe(
         // tap((data) => { this.logger.log('HTTP GET data: ', data); }),
         catchError((err: HttpErrorResponse) => this.handleError(err))

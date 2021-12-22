@@ -1,3 +1,4 @@
+import { IResponse } from './../models/i-response';
 import { environment } from './../environments/environment';
 import { HttpClientModule } from '@angular/common/http';
 import { TestBed, waitForAsync } from '@angular/core/testing';
@@ -6,7 +7,8 @@ import { AuthService, ITokenResponse, TOKEN_KEY } from './auth.service';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { Observable, of, throwError } from 'rxjs';
 
-const MOCK_SUCC_RESPONSE: ITokenResponse = {
+
+const MOCK_SUCC_RESULT: ITokenResponse = {
   depart: '',
   domain: 'KFHI',
   email: 'mazelone',
@@ -18,6 +20,12 @@ const MOCK_SUCC_RESPONSE: ITokenResponse = {
   type: 'BUYER',
 }
 
+const MOCK_SUCC_RESPONSE: IResponse<ITokenResponse> = {
+  code: 'Ok',
+  message: 'Success',
+  result: MOCK_SUCC_RESULT
+}
+
 const MOCK_FAIL_RESPONSE = {
   code: 'Unauthorized',
   message: 'Invalid password or expired token.'
@@ -25,6 +33,7 @@ const MOCK_FAIL_RESPONSE = {
 
 describe('AuthService', () => {
   let service: AuthService;
+  let httpMock: HttpTestingController;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -32,9 +41,10 @@ describe('AuthService', () => {
         AuthService,
         { provide: 'BASE_API_URL', useValue: environment.apiUrl },
       ],
-      imports: [HttpClientModule]
+      imports: [HttpClientTestingModule, HttpClientModule]
     })
     service = TestBed.inject(AuthService);
+    httpMock = TestBed.inject(HttpTestingController)
   });
 
   it('should be created', () => {
@@ -42,19 +52,20 @@ describe('AuthService', () => {
   });
 
   describe(`'login' function mock testing`, () => {
-    it('#login success response', (done) => {
+    it('#login success response', () => {
       const id = 'mazelone';
       const pwd = 'mazelone';
-      service.login(id, pwd).subscribe({
-        next: (response) => {
-          expect(response.email).toEqual(id);
-          expect(response.name).toEqual('마젤원');
-          done();
-        }
-      })
+      service.login(id, pwd).subscribe((response) => {
+        console.warn(response);
+          expect(response).toEqual(MOCK_SUCC_RESULT);
+      }, (err) => {console.warn(err);})
+
+      const request = httpMock.expectOne( `${service.apiUrl}`);
+      expect(request.request.method).toBe('POST');
+      request.flush(MOCK_SUCC_RESPONSE);
     })
 
-    it('#login failed response', (done) => {
+    it('#login failed response', () => {
       const id = 'mazelone';
       const pwd = '0000';
       service.login(id, pwd).subscribe({
@@ -63,10 +74,44 @@ describe('AuthService', () => {
           console.log(error)
           expect(error.error.code).toBe('Unauthorized');
           expect(error.error.message).toBe('Invalid password or expired token.');
-          done();
         }
       })
+
+      const request = httpMock.expectOne( `${service.apiUrl}`);
+      expect(request.request.method).toBe('POST');
+      request.flush(MOCK_FAIL_RESPONSE);
     })
   });
+
+  // describe(`'login' function testing`, () => {
+  //   it('#login success response', (done) => {
+  //     const id = 'mazelone';
+  //     const pwd = 'mazelone';
+  //     service.login(id, pwd).subscribe({
+  //       next: (response) => {
+  //         expect(response.result.email).toEqual(id);
+  //         expect(response.result.name).toEqual('마젤원')
+  //         done()
+  //       }
+  //     })
+  //   })
+
+  //   it('#login failed response', (done) => {
+  //     const id = 'mazelone';
+  //     const pwd = '0000';
+  //     service.login(id, pwd).subscribe({
+  //       next: () => {},
+  //       error: (error) => {
+  //         expect(error.error.code).toBe('Unauthorized');
+  //         expect(error.error.message).toBe('Invalid password or expired token.');
+  //         done();
+  //       }
+  //     })
+  //   })
+  // });
+
+  afterEach(() => {
+    httpMock.verify();
+});
 
 });
